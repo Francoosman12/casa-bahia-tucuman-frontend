@@ -1,6 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
-// Agregamos FaTachometerAlt (Icono de velocidad/dashboard)
+import { Link, useNavigate, useLocation } from "react-router-dom"; // Importar hooks de navegación
 import {
   FaShoppingCart,
   FaUserLock,
@@ -8,40 +7,56 @@ import {
   FaTachometerAlt,
 } from "react-icons/fa";
 import { useCart } from "../../context/CartContext";
-import { useAuth } from "../../context/AuthContext"; // 👈 IMPORTANTE
+import { useAuth } from "../../context/AuthContext";
+import { useSearch } from "../../context/SearchContext"; // 👈 IMPORTAR
 import logo from "../../assets/casa-bahia.png";
 
 const Navbar = () => {
   const { setIsCartOpen, cartItems } = useCart();
-  const { isAuthenticated } = useAuth(); // 👈 Obtenemos el estado
+  const { isAuthenticated } = useAuth();
+
+  // LOGICA DE BÚSQUEDA 👇
+  const { searchTerm, setSearchTerm } = useSearch();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    // Si el usuario escribe y NO está en el Home ('/'), lo llevamos ahí
+    if (value && location.pathname !== "/") {
+      navigate("/");
+    }
+  };
 
   const itemsCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
 
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        {/* LOGO */}
         <Link to="/" className="flex items-center">
           <img
             src={logo}
             alt="Casa Bahía Logo"
-            className="h-12 w-auto object-contain" // h-10 (40px) es un buen tamaño para navbar
+            className="h-12 w-auto object-contain"
           />
         </Link>
 
-        {/* BUSCADOR */}
+        {/* BUSCADOR CONECTADO */}
         <div className="hidden md:flex flex-1 max-w-lg mx-8 relative">
           <input
             type="text"
             placeholder="¿Qué estás buscando? (Sillones, Mesas...)"
             className="w-full pl-4 pr-10 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 bg-gray-50 transition-all"
+            value={searchTerm} // 👈 Valor del contexto
+            onChange={handleSearch} // 👈 Función mágica
           />
           <FaSearch className="absolute right-3 top-3 text-gray-400" />
         </div>
 
         {/* ICONOS */}
         <div className="flex items-center gap-6">
-          {/* 👇 LÓGICA CONDICIONAL AQUÍ 👇 */}
           {isAuthenticated ? (
             <Link
               to="/admin/dashboard"
@@ -61,7 +76,6 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* BOTÓN CARRITO */}
           <button
             onClick={() => setIsCartOpen(true)}
             className="relative group text-gray-600 hover:text-indigo-600 transition-colors"

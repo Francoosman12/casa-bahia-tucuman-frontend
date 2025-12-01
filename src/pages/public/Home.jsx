@@ -5,6 +5,7 @@ import Footer from "../../components/layout/Footer";
 import ProductCard from "../../components/products/ProductCard";
 import { useProducts } from "../../hooks/useProducts";
 import { FaFilter, FaThList, FaSearch } from "react-icons/fa";
+import { useSearch } from "../../context/SearchContext";
 
 const Home = () => {
   // Datos principales
@@ -13,7 +14,7 @@ const Home = () => {
   // Estado local para filtros
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("TODOS");
-  const [searchTerm, setSearchTerm] = useState("");
+  const { searchTerm, setSearchTerm } = useSearch();
 
   // Cargar categorías al montar
   useEffect(() => {

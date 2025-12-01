@@ -21,7 +21,7 @@ const Footer = () => {
               <img
                 src={logo}
                 alt="Casa Bahía Logo"
-                className="h-100 w-auto object-contain" // h-10 (40px) es un buen tamaño para navbar
+                className="h-20 w-auto object-contain" // h-10 (40px) es un buen tamaño para navbar
               />
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed pt-5">
