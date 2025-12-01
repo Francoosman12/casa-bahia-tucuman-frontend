@@ -92,7 +92,7 @@ const ProductDetail = () => {
 
   const handleWhatsAppBuy = () => {
     if (!product) return;
-    const phone = "5493815123456";
+    const phone = "5493816436214";
     const message = `Hola Casa Bahia, consulta por: *${product.name}* (SKU: ${product.sku}).`;
     window.open(
       `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
