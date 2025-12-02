@@ -4,16 +4,20 @@ import { Link } from "react-router-dom";
 
 const ProductCard = ({ product }) => {
   // Si no hay imagen, usamos un placeholder gris
-  const imageUrl =
+  let imageUrl =
     product.images?.[0]?.url ||
     "https://via.placeholder.com/300x200?text=Sin+Imagen";
-
+  if (imageUrl) {
+    // Si viene de cloudinary, tiene '/upload/'
+    imageUrl = imageUrl.replace("/upload/", "/upload/f_auto,q_auto,w_400/");
+  }
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-gray-100">
       {/* 🖼️ ZONA IMAGEN */}
       <div className="h-48 overflow-hidden relative group">
         <img
           src={imageUrl}
+          loading="lazy"
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />

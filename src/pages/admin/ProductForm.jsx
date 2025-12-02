@@ -161,6 +161,35 @@ const ProductForm = () => {
       <div className="p-20 text-center text-gray-500">Cargando producto...</div>
     );
 
+  // --- LÍMITE DE PALABRAS ---
+  const MAX_WORDS = 50;
+
+  // Calculamos palabras actuales para el contador
+  const currentWords = formData.description
+    ? formData.description
+        .trim()
+        .split(/\s+/)
+        .filter((w) => w !== "").length
+    : 0;
+
+  // Handler especial para descripción que bloquea si te pasas
+  const handleDescriptionChange = (e) => {
+    const text = e.target.value;
+    const words = text
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w !== "");
+
+    // Permitimos escribir si está bajo el límite o si está borrando (longitud menor)
+    // También permitimos espacios al final (para seguir escribiendo)
+    if (
+      words.length <= MAX_WORDS ||
+      text.length < formData.description.length
+    ) {
+      setFormData({ ...formData, description: text });
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="max-w-4xl mx-auto">
@@ -256,6 +285,37 @@ const ProductForm = () => {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* --- CAMPO DESCRIPCIÓN CON LÍMITE --- */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-bold text-gray-700">
+                Descripción
+              </label>
+              <span
+                className={`text-xs font-bold transition-colors ${
+                  currentWords >= MAX_WORDS ? "text-red-500" : "text-gray-400"
+                }`}
+              >
+                {currentWords} / {MAX_WORDS} palabras
+              </span>
+            </div>
+            <textarea
+              name="description"
+              rows="4"
+              value={formData.description}
+              onChange={handleDescriptionChange} // Usa la función especial
+              className={`w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-indigo-500 resize-y ${
+                currentWords >= MAX_WORDS
+                  ? "focus:ring-red-500 border-red-200 bg-red-50"
+                  : ""
+              }`}
+              placeholder="Ej: Mesa ratona estilo industrial de 80x40cm. Hierro estructural y madera paraíso laqueada."
+            ></textarea>
+            <p className="text-xs text-gray-400 mt-1">
+              Breve resumen para el catálogo y el mensaje de venta.
+            </p>
           </div>
 
           {/* --- GESTOR DE IMÁGENES MEJORADO --- */}
