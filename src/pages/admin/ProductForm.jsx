@@ -117,6 +117,12 @@ const ProductForm = () => {
     setPreviews(updatedPreviews);
   };
 
+  // Función para borrar visualmente una foto vieja
+  const removeExistingImage = (imageId) => {
+    // Filtramos el array para quitar la foto con ese ID
+    setExistingImages((prev) => prev.filter((img) => img._id !== imageId));
+  };
+
   // Nota: Para borrar imágenes VIEJAS (del backend) se requeriría un endpoint especial de 'deleteImage'
   // Por ahora solo permitimos subir más hasta llegar a 3.
 
@@ -133,12 +139,18 @@ const ProductForm = () => {
 
     try {
       const dataToSend = new FormData();
-      // Appending datos normales
+
+      // 1. Datos normales (Nombre, Precio, SKU, etc.)
       Object.keys(formData).forEach((key) =>
         dataToSend.append(key, formData[key])
       );
-      // Appending imágenes
+
+      // 2. Imágenes Nuevas
       files.forEach((file) => dataToSend.append("images", file));
+
+      // 3. Imágenes Existentes (Las viejas que NO borraste) 👇 NUEVO
+      // Las convertimos a texto (JSON) para enviarlas dentro del FormData
+      dataToSend.append("existingImages", JSON.stringify(existingImages));
 
       if (isEditing) {
         await axiosClient.put(`/products/${id}`, dataToSend);
@@ -346,6 +358,7 @@ const ProductForm = () => {
               )}
 
               {/* 2. Fotos Existentes (Viejas) */}
+              {/* 2. Fotos Existentes (Viejas) */}
               {existingImages.map((img) => (
                 <div
                   key={img._id}
@@ -356,6 +369,17 @@ const ProductForm = () => {
                     alt="db"
                     className="w-full h-full object-cover"
                   />
+
+                  {/* 👇 BOTÓN BORRAR NUEVO PARA VIEJAS 👇 */}
+                  <button
+                    type="button" // Importante: type button para que no envíe el form
+                    onClick={() => removeExistingImage(img._id)}
+                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full shadow hover:bg-red-600 transition-colors z-10"
+                    title="Quitar imagen guardada"
+                  >
+                    <FaTimes size={10} />
+                  </button>
+
                   <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] text-center py-1">
                     Guardada
                   </div>
