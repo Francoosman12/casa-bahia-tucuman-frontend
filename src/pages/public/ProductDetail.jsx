@@ -13,12 +13,23 @@ import {
 import Navbar from "../../components/layout/Navbar";
 import { useCart } from "../../context/CartContext";
 
-// --- HELPERS PARA YOUTUBE ---
+// --- HELPER ROBUSTO PARA YOUTUBE ---
 const getYouTubeId = (url) => {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  // Soporta: youtube.com, youtu.be, shorts, embed, m.youtube
+  const regExp =
+    /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/|watch\?.+&v=))([\w-]{11})(?:.+)?$/;
   const match = url.match(regExp);
-  return match && match[2].length === 11 ? match[2] : null;
+  return match && match[1] ? match[1] : null;
+};
+
+// --- HELPER PARA TIKTOK ---
+const getTikTokId = (url) => {
+  if (!url) return null;
+  // Busca el patrón /video/NUMEROS
+  const regExp = /\/video\/(\d+)/;
+  const match = url.match(regExp);
+  return match && match[1] ? match[1] : null;
 };
 
 const ProductDetail = () => {
@@ -62,14 +73,28 @@ const ProductDetail = () => {
             });
           }
 
-          // 2. Video
+          // 2. Agregar Video (YouTube o TikTok)
           if (found.videoUrl) {
-            const videoId = getYouTubeId(found.videoUrl);
-            if (videoId) {
+            const ytId = getYouTubeId(found.videoUrl);
+            const tkId = getTikTokId(found.videoUrl);
+
+            if (ytId) {
+              // CASO YOUTUBE
               media.push({
-                type: "video",
-                url: `https://www.youtube.com/embed/${videoId}`,
-                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                type: "video_youtube", // Cambiamos nombre para diferenciar
+                url: `https://www.youtube.com/embed/${ytId}`,
+                thumbnail: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+                id: "video-item",
+              });
+            } else if (tkId) {
+              // CASO TIKTOK
+              media.push({
+                type: "video_tiktok",
+                // URL oficial de embed de TikTok
+                url: `https://www.tiktok.com/embed/v2/${tkId}`,
+                // Usamos un logo de TikTok estático porque ellos no dan la foto gratis por URL
+                thumbnail:
+                  "https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg",
                 id: "video-item",
               });
             }
@@ -130,28 +155,31 @@ const ProductDetail = () => {
             {/* ========================================================= */}
             <div className="lg:col-span-7 p-6 md:p-10 bg-white flex flex-col gap-6">
               {/* Visor Grande */}
-              <div className="relative w-full aspect-square md:aspect-[4/3] bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex items-center justify-center">
+              {/* 1. VISOR PRINCIPAL GRANDE */}
+              <div className="relative w-full aspect-square md:aspect-[4/3] bg-black rounded-2xl overflow-hidden shadow-sm flex items-center justify-center">
                 {!activeMedia ? (
                   <img
                     src="https://via.placeholder.com/600?text=Sin+Imagen"
                     alt="Placeholder"
                     className="w-full h-full object-cover opacity-50"
                   />
-                ) : activeMedia.type === "video" ? (
+                ) : activeMedia.type === "image" ? (
+                  // FOTO
+                  <img
+                    src={activeMedia.url}
+                    alt={product.name}
+                    className="w-full h-full object-contain p-1 bg-white"
+                  />
+                ) : (
+                  // VIDEO (YouTube o TikTok)
                   <iframe
-                    src={activeMedia.url + "?autoplay=1&rel=0"}
+                    src={activeMedia.url}
                     title="Video Producto"
                     className="w-full h-full"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   ></iframe>
-                ) : (
-                  <img
-                    src={activeMedia.url}
-                    alt={product.name}
-                    className="w-full h-full object-contain p-2"
-                  />
                 )}
               </div>
 
@@ -171,15 +199,38 @@ const ProductDetail = () => {
                         }
                       `}
                     >
+                      {/* ... dentro del .map del carrusel ... */}
                       <img
-                        src={item.type === "video" ? item.thumbnail : item.url}
-                        alt="Thumb"
-                        className="w-full h-full object-cover"
+                        src={
+                          item.type.includes("video")
+                            ? item.thumbnail
+                            : item.url
+                        }
+                        alt="Vista Previa"
+                        className={`w-full h-full ${
+                          item.type === "video_tiktok"
+                            ? "object-contain p-2 bg-black"
+                            : "object-cover"
+                        }`}
+                        // 👇 AGREGA ESTO: Si falla la carga, pone una imagen gris por defecto
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src =
+                            "https://via.placeholder.com/150/cccccc/000000?text=No+Img";
+                        }}
                       />
-                      {item.type === "video" && (
+                      {/* Icono Overlay si es video (YouTube o TikTok) */}
+                      {(item.type === "video_youtube" ||
+                        item.type === "video_tiktok") && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/10 transition-colors">
-                          <div className="bg-red-600 text-white rounded-full p-2 shadow-lg">
-                            <FaPlay size={12} className="ml-0.5" />
+                          <div
+                            className={`text-white rounded-full p-2 shadow-lg ${
+                              item.type === "video_tiktok"
+                                ? "bg-black"
+                                : "bg-red-600"
+                            }`}
+                          >
+                            <FaPlay size={10} className="ml-0.5" />
                           </div>
                         </div>
                       )}

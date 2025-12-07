@@ -51,11 +51,6 @@ const Footer = () => {
                   Información de Envíos
                 </span>
               </li>
-              <li>
-                <span className="hover:text-white transition-colors cursor-pointer">
-                  Garantía
-                </span>
-              </li>
             </ul>
           </div>
 
@@ -82,11 +77,11 @@ const Footer = () => {
               <li className="flex items-center gap-3 text-gray-300">
                 <FaWhatsapp className="text-green-500 text-lg" />
                 <a
-                  href="https://wa.me/5493815123456"
+                  href="https://wa.me/5493814621482"
                   target="_blank"
                   className="text-sm hover:text-green-400 transition-colors font-semibold"
                 >
-                  +54 9 381 123-4567
+                  +54 9 381 462-1482
                 </a>
               </li>
             </ul>
