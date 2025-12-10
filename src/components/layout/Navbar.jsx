@@ -9,7 +9,7 @@ import {
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
 import { useSearch } from "../../context/SearchContext"; // 👈 IMPORTAR
-import logo from "../../assets/casa-bahia.png";
+import logo from "../../../public/casabahiamini.png";
 
 const Navbar = () => {
   const { setIsCartOpen, cartItems } = useCart();
