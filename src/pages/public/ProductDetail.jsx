@@ -256,42 +256,55 @@ const ProductDetail = () => {
                 </p>
               </div>
 
-              {/* CARD PRECIOS */}
+              {/* CARD DE PRECIOS ACTUALIZADA */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 mb-8">
-                <div className="mb-4">
-                  <p className="text-gray-400 text-sm line-through">
-                    Lista: {formatPrice(product.prices.base)}
-                  </p>
+                <div className="mb-4 border-b border-gray-100 pb-4">
+                  {/* 1. PRECIO LISTA (TACHADO) - Solo si hay recargo */}
+                  {product.prices?.list > product.prices?.cash && (
+                    <p className="text-gray-400 text-base mb-1 font-medium flex items-center gap-2">
+                      Precio Lista:
+                      <span className="line-through decoration-red-400 text-gray-500">
+                        {formatPrice(product.prices.list)}
+                      </span>
+                    </p>
+                  )}
+
+                  {/* 2. PRECIO CONTADO (Destacado) */}
                   <div className="flex flex-col">
                     <span className="text-4xl font-black text-gray-800">
                       {formatPrice(product.prices.cash)}
                     </span>
                     <span className="text-green-600 font-bold text-sm bg-green-50 w-fit px-2 rounded mt-1">
-                      Pago en Efectivo / Débito
+                      ✅ Precio Contado / Débito
                     </span>
                   </div>
                 </div>
 
-                <div className="border-t border-dashed border-gray-200 pt-4 space-y-3">
-                  <p className="text-xs font-bold text-gray-400 uppercase">
-                    Financiación
+                {/* 3. FINANCIACIÓN */}
+                <div className="space-y-3 pt-2">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                    Opciones de Financiación
                   </p>
+
                   {product.prices.financing?.length > 0 ? (
                     product.prices.financing.map((plan, i) => (
-                      <div key={i} className="flex justify-between text-sm">
-                        <span className="text-gray-600 font-medium">
+                      <div
+                        key={i}
+                        className="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-lg border border-gray-100 group hover:border-indigo-200 transition-colors"
+                      >
+                        <span className="font-semibold text-gray-700 group-hover:text-indigo-700 transition-colors">
                           {plan.planName}
                         </span>
-                        <span className="text-indigo-700 font-bold">
+                        <span className="text-indigo-600 font-bold text-base">
                           {plan.installments} cuotas de{" "}
                           {formatPrice(plan.installmentValue)}
                         </span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-gray-400 italic text-sm">
-                      Consultar planes de tarjeta.
-                    </p>
+                    <div className="flex gap-2 items-center text-gray-400 italic text-sm p-2 bg-gray-50 rounded">
+                      <span>ℹ️</span> Consultar planes con tarjeta en el local.
+                    </div>
                   )}
                 </div>
               </div>

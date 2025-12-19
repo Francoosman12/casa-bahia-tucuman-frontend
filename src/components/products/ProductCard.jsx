@@ -3,14 +3,15 @@ import { formatPrice } from "../../utils/formatPrice";
 import { Link } from "react-router-dom";
 
 const ProductCard = ({ product }) => {
-  // Si no hay imagen, usamos un placeholder gris
+  // Optimización de imágenes Cloudinary
   let imageUrl =
     product.images?.[0]?.url ||
     "https://via.placeholder.com/300x200?text=Sin+Imagen";
-  if (imageUrl) {
-    // Si viene de cloudinary, tiene '/upload/'
+
+  if (imageUrl && imageUrl.includes("cloudinary.com")) {
     imageUrl = imageUrl.replace("/upload/", "/upload/f_auto,q_auto,w_400/");
   }
+
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-gray-100">
       {/* 🖼️ ZONA IMAGEN */}
@@ -21,10 +22,11 @@ const ProductCard = ({ product }) => {
           alt={product.name}
           className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
         />
-        {/* Badge de Oferta (Lógica simple: si hay descuento, es oferta) */}
-        {product.prices?.discountPct > 0 && (
-          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-            {product.prices.discountPct}% OFF
+
+        {/* Etiqueta de Destacado (Reemplaza al % OFF) */}
+        {product.isFeatured && (
+          <div className="absolute top-2 right-2 bg-yellow-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm tracking-wide">
+            DESTACADO
           </div>
         )}
       </div>
@@ -42,15 +44,18 @@ const ProductCard = ({ product }) => {
 
         {/* 💲 ZONA PRECIOS */}
         <div className="mt-4 space-y-1">
-          {/* Precio Lista Tachado */}
-          <div className="flex items-center space-x-2 text-sm text-gray-400">
-            <span>Lista:</span>
-            <span className="line-through">
-              {formatPrice(product.prices?.base)}
-            </span>
-          </div>
+          {/* 1. PRECIO LISTA TACHADO (Campo Nuevo 'list') */}
+          {/* Solo se muestra si es mayor al contado (evita errores visuales si es 0) */}
+          {product.prices?.list > product.prices?.cash && (
+            <div className="flex items-center space-x-2 text-xs text-gray-400">
+              <span>Lista:</span>
+              <span className="line-through decoration-red-300">
+                {formatPrice(product.prices.list)}
+              </span>
+            </div>
+          )}
 
-          {/* Precio Efectivo (Destacado) */}
+          {/* 2. PRECIO CONTADO (Precio Base) */}
           <div className="flex items-center justify-between">
             <span className="text-gray-600 text-sm font-medium">
               Contado/Débito
@@ -60,25 +65,24 @@ const ProductCard = ({ product }) => {
             </span>
           </div>
 
-          {/* Financiación (Muestra el primer plan destacado, ej: Ahora 12) */}
+          {/* 3. FINANCIACIÓN (Mejor Plan) */}
           {product.prices?.financing?.length > 0 && (
             <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
-              <p className="text-xs text-gray-500 font-medium mb-1">
-                Financiación disponible:
+              <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">
+                Financiación
               </p>
-              {/* Mostramos solo el plan con MÁS cuotas como gancho */}
               {(() => {
-                // Buscamos el plan con mayor cuotas
+                // Buscamos el plan con MÁS cuotas para mostrar "Ahora 12..."
                 const maxPlan = product.prices.financing.reduce(
                   (prev, current) =>
                     prev.installments > current.installments ? prev : current
                 );
                 return (
                   <div className="text-sm font-semibold text-gray-700">
-                    💳 {maxPlan.installments} cuotas de{" "}
                     <span className="text-indigo-600">
-                      {formatPrice(maxPlan.installmentValue)}
-                    </span>
+                      {maxPlan.installments} cuotas
+                    </span>{" "}
+                    de {formatPrice(maxPlan.installmentValue)}
                   </div>
                 );
               })()}

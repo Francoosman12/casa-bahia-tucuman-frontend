@@ -111,18 +111,20 @@ const FinancialManager = () => {
         </div>
 
         {/* SECCIÓN 1: PAGO CONTADO */}
+        {/* SECCIÓN 1: CONFIGURACIÓN PRECIO LISTA */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
           <h2 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
             <span className="bg-green-100 text-green-700 p-2 rounded-lg">
               <FaPercentage />
             </span>
-            Descuento por Pago Efectivo
+            {/* CAMBIAMOS EL TÍTULO */}
+            Margen Precio de Lista
           </h2>
           <div className="flex items-center gap-4">
             <div className="relative w-full max-w-xs">
               <input
                 type="number"
-                value={config.cashDiscount}
+                value={config.cashDiscount} // Usamos la misma variable en DB para no migrar datos
                 onChange={handleDiscountChange}
                 className="w-full border-2 border-gray-200 rounded-lg p-3 pr-10 focus:border-indigo-500 outline-none text-lg font-bold text-gray-700"
               />
@@ -130,9 +132,18 @@ const FinancialManager = () => {
                 %
               </span>
             </div>
-            <p className="text-sm text-gray-500">
-              Este porcentaje se restará automáticamente del precio base.
-            </p>
+
+            {/* CAMBIAMOS LA EXPLICACIÓN */}
+            <div className="text-sm text-gray-500">
+              <p>
+                Este porcentaje <strong>se sumará</strong> al Precio Base para
+                mostrar el "Precio de Lista" tachado.
+              </p>
+              <p className="text-xs mt-1 text-gray-400">
+                (Ej: Si pones 45%, un producto de $100 se mostrará con lista
+                $145).
+              </p>
+            </div>
           </div>
         </div>
 
