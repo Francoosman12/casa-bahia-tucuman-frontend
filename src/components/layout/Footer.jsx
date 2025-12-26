@@ -89,13 +89,13 @@ const Footer = () => {
             {/* REDES */}
             <div className="flex gap-4 mt-6">
               <a
-                href="https://www.facebook.com/p/Casa-Bahia-Hogar-100087271459048/"
+                href="https://www.facebook.com/people/Casa-Bahia-Amoblamientos-Confort/61578328714822/"
                 className="p-2 bg-gray-800 rounded-full hover:bg-blue-600 transition-colors"
               >
                 <FaFacebook size={18} />
               </a>
               <a
-                href="https://www.instagram.com/bahia.hogar"
+                href="https://www.instagram.com/casabahiatucuman/"
                 className="p-2 bg-gray-800 rounded-full hover:bg-pink-600 transition-colors"
               >
                 <FaInstagram size={18} />
