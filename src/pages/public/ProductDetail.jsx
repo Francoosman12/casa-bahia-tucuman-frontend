@@ -275,7 +275,7 @@ const ProductDetail = () => {
                       {formatPrice(product.prices.cash)}
                     </span>
                     <span className="text-green-600 font-bold text-sm bg-green-50 w-fit px-2 rounded mt-1">
-                      ✅ Precio Contado / Débito
+                      ✅ Precio Contado / Transferencia
                     </span>
                   </div>
                 </div>

@@ -58,7 +58,7 @@ const ProductCard = ({ product }) => {
           {/* 2. PRECIO CONTADO (Precio Base) */}
           <div className="flex items-center justify-between">
             <span className="text-gray-600 text-sm font-medium">
-              Contado/Débito
+              Contado/Transferencia
             </span>
             <span className="text-2xl font-bold text-blue-600">
               {formatPrice(product.prices?.cash)}
