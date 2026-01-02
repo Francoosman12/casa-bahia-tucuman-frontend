@@ -2,14 +2,17 @@ import React, { useState, useEffect } from "react";
 import AdminLayout from "../../components/layout/AdminLayout";
 import axiosClient from "../../api/axiosClient";
 import { toast } from "react-toastify";
-import { FaPlus, FaTags, FaTrash } from "react-icons/fa";
+import { FaPlus, FaTags, FaTrash, FaEdit, FaTimes } from "react-icons/fa"; // Agregamos FaEdit y FaTimes
 
 const CategoryManager = () => {
   const [categories, setCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState("");
+  const [categoryName, setCategoryName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // 1. Cargar categorías existentes
+  // Estado para saber si estamos editando (Guarda el objeto categoría o null)
+  const [editingCategory, setEditingCategory] = useState(null);
+
+  // 1. Cargar categorías
   const fetchCategories = async () => {
     try {
       const { data } = await axiosClient.get("/categories");
@@ -23,23 +26,62 @@ const CategoryManager = () => {
     fetchCategories();
   }, []);
 
-  // 2. Crear nueva categoría
+  // 2. Manejar Submit (Crear O Editar)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newCategory.trim()) return;
+    if (!categoryName.trim()) return;
 
     setLoading(true);
     try {
-      // El backend espera { name: "..." }
-      await axiosClient.post("/categories", { name: newCategory });
+      if (editingCategory) {
+        // MODO EDICIÓN
+        await axiosClient.put(`/categories/${editingCategory._id}`, {
+          name: categoryName,
+        });
+        toast.success("✅ Categoría actualizada");
+      } else {
+        // MODO CREACIÓN
+        await axiosClient.post("/categories", { name: categoryName });
+        toast.success("✅ Categoría creada");
+      }
 
-      toast.success("✅ Categoría creada");
-      setNewCategory(""); // Limpiar input
-      fetchCategories(); // Recargar lista
+      resetForm();
+      fetchCategories();
     } catch (error) {
-      toast.error("Error al crear categoría");
+      toast.error("Error al guardar categoría");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 3. Preparar el formulario para Editar
+  const handleEditClick = (category) => {
+    setEditingCategory(category);
+    setCategoryName(category.name);
+  };
+
+  // 4. Cancelar edición
+  const resetForm = () => {
+    setEditingCategory(null);
+    setCategoryName("");
+  };
+
+  // 5. Eliminar Categoría
+  const handleDelete = async (id) => {
+    if (
+      window.confirm(
+        "¿Eliminar esta categoría? Esto podría afectar productos asociados."
+      )
+    ) {
+      try {
+        await axiosClient.delete(`/categories/${id}`);
+        toast.success("Categoría eliminada");
+        // Si estábamos editando la que borramos, limpiar form
+        if (editingCategory?._id === id) resetForm();
+        fetchCategories();
+      } catch (error) {
+        toast.error("No se pudo eliminar");
+      }
     }
   };
 
@@ -51,15 +93,30 @@ const CategoryManager = () => {
             <FaTags className="text-indigo-600" /> Categorías
           </h1>
           <p className="text-gray-500">
-            Organiza los departamentos de tu tienda.
+            Gestiona, edita o elimina los departamentos de la tienda.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* --- IZQUIERDA: FORMULARIO --- */}
           <div className="md:col-span-1">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 sticky top-24">
-              <h3 className="font-bold text-gray-700 mb-4">Nueva Categoría</h3>
+            <div
+              className={`p-6 rounded-xl shadow-sm border border-gray-100 sticky top-24 transition-colors ${
+                editingCategory ? "bg-indigo-50 border-indigo-200" : "bg-white"
+              }`}
+            >
+              <h3 className="font-bold text-gray-700 mb-4 flex justify-between items-center">
+                {editingCategory ? "Editar Categoría" : "Nueva Categoría"}
+                {editingCategory && (
+                  <button
+                    onClick={resetForm}
+                    className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                  >
+                    <FaTimes /> Cancelar
+                  </button>
+                )}
+              </h3>
+
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
@@ -67,23 +124,28 @@ const CategoryManager = () => {
                   </label>
                   <input
                     type="text"
-                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
                     placeholder="Ej: Colchones"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
                     required
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all flex justify-center items-center gap-2"
+                  className={`w-full text-white font-bold py-3 rounded-lg transition-all flex justify-center items-center gap-2 ${
+                    editingCategory
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-indigo-600 hover:bg-indigo-700"
+                  }`}
                 >
                   {loading ? (
                     "Guardando..."
                   ) : (
                     <>
-                      <FaPlus /> Crear
+                      {editingCategory ? <FaEdit /> : <FaPlus />}
+                      {editingCategory ? " Actualizar" : " Crear"}
                     </>
                   )}
                 </button>
@@ -107,17 +169,39 @@ const CategoryManager = () => {
                 {categories.map((cat) => (
                   <li
                     key={cat._id}
-                    className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
+                    className={`p-4 flex justify-between items-center transition-colors ${
+                      editingCategory?._id === cat._id
+                        ? "bg-indigo-50"
+                        : "hover:bg-gray-50"
+                    }`}
                   >
-                    <span className="font-medium text-gray-800">
-                      {cat.name}
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-400 font-mono bg-gray-100 px-2 py-1 rounded">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-800">
+                        {cat.name}
+                      </span>
+                      <span className="text-xs text-gray-400 font-mono">
                         /{cat.slug}
                       </span>
-                      {/* Botón Borrar (Visual por ahora, o conecta DELETE si quieres) */}
-                      {/* <button className="text-red-400 hover:text-red-600"><FaTrash/></button> */}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Botón Editar */}
+                      <button
+                        onClick={() => handleEditClick(cat)}
+                        className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <FaEdit />
+                      </button>
+
+                      {/* Botón Borrar */}
+                      <button
+                        onClick={() => handleDelete(cat._id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Eliminar"
+                      >
+                        <FaTrash />
+                      </button>
                     </div>
                   </li>
                 ))}
