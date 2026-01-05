@@ -60,7 +60,7 @@ export const CartProvider = ({ children }) => {
   const sendOrder = () => {
     if (cartItems.length === 0) return;
 
-    const phone = "5493816436214"; // TU NÚMERO
+    const phone = "5493814621482"; // TU NÚMERO
 
     let message =
       "Hola *Casa Bahia*, quisiera consultar por el siguiente pedido web: \n\n";
