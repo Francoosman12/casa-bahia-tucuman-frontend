@@ -26,7 +26,7 @@ export const CartProvider = ({ children }) => {
         // Si ya existe, sumamos 1 a la cantidad
         toast.info("Se actualizó la cantidad en el carrito");
         return prev.map((item) =>
-          item._id === product._id ? { ...item, qty: item.qty + 1 } : item
+          item._id === product._id ? { ...item, qty: item.qty + 1 } : item,
         );
       }
       // Si es nuevo
@@ -46,7 +46,7 @@ export const CartProvider = ({ children }) => {
   const updateQuantity = (id, newQty) => {
     if (newQty < 1) return;
     setCartItems((prev) =>
-      prev.map((item) => (item._id === id ? { ...item, qty: newQty } : item))
+      prev.map((item) => (item._id === id ? { ...item, qty: newQty } : item)),
     );
   };
 
@@ -60,7 +60,7 @@ export const CartProvider = ({ children }) => {
   const sendOrder = () => {
     if (cartItems.length === 0) return;
 
-    const phone = "5493814621482"; // TU NÚMERO
+    const phone = "5493815225633"; // TU NÚMERO
 
     let message =
       "Hola *Casa Bahia*, quisiera consultar por el siguiente pedido web: \n\n";
@@ -76,7 +76,7 @@ export const CartProvider = ({ children }) => {
 
     window.open(
       `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-      "_blank"
+      "_blank",
     );
   };
 

@@ -51,9 +51,8 @@ const ProductDetail = () => {
         setLoading(true);
         // Si tienes el endpoint específico usa: axiosClient.get(`/products/${id}`)
         // Usamos el filtro global por ahora:
-        const { data: allProducts } = await axiosClient.get(
-          "/products?all=true"
-        );
+        const { data: allProducts } =
+          await axiosClient.get("/products?all=true");
         const found = allProducts.find((p) => p._id === id);
 
         if (found) {
@@ -117,11 +116,11 @@ const ProductDetail = () => {
 
   const handleWhatsAppBuy = () => {
     if (!product) return;
-    const phone = "5493814621482";
+    const phone = "5493815225633";
     const message = `Hola Casa Bahia, consulta por: *${product.name}* (SKU: ${product.sku}).`;
     window.open(
       `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-      "_blank"
+      "_blank",
     );
   };
 
