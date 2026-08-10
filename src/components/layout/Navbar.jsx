@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import axiosClient from "../../api/axiosClient"; // Para buscar productos
 import {
   FaShoppingCart,
@@ -12,15 +12,14 @@ import {
 } from "react-icons/fa";
 import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../context/AuthContext";
-import { useSearch } from "../../context/SearchContext";
 import { formatPrice } from "../../utils/formatPrice"; // Importa tu formateador
 import logo from "../../../public/casabahiamini.png";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams(); // Para no pisar el filtro de categoría del Home
   const { setIsCartOpen, cartItems } = useCart();
   const { isAuthenticated } = useAuth();
-  const { setSearchTerm } = useSearch(); // Contexto Global
 
   // --- ESTADOS LOCALES DEL BUSCADOR ---
   const [query, setQuery] = useState(""); // Lo que el usuario escribe
@@ -70,9 +69,12 @@ const Navbar = () => {
 
   // 1. Ir a ver TODOS los resultados (Home)
   const handleShowAllResults = () => {
-    setSearchTerm(query); // Ahora sí actualizamos el global
+    // Preservamos la categoría si ya estábamos en el Home filtrados
+    const params = new URLSearchParams(searchParams);
+    if (query) params.set("q", query);
+    else params.delete("q");
     setIsOpen(false);
-    navigate("/"); // Vamos al home
+    navigate(`/?${params.toString()}`);
   };
 
   // 2. Presionar Enter en el input
@@ -105,10 +107,7 @@ const Navbar = () => {
         <Link
           to="/"
           className="flex items-center shrink-0"
-          onClick={() => {
-            setSearchTerm("");
-            setQuery("");
-          }}
+          onClick={() => setQuery("")}
         >
           <img
             src={logo}
@@ -146,7 +145,6 @@ const Navbar = () => {
                 onClick={() => {
                   setQuery("");
                   setIsOpen(false);
-                  setSearchTerm("");
                 }}
               />
             ) : (

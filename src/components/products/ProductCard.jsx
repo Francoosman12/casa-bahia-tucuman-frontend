@@ -13,9 +13,12 @@ const ProductCard = ({ product }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-gray-100">
+    <Link
+      to={`/product/${product._id}`}
+      className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col h-full border border-gray-100"
+    >
       {/* 🖼️ ZONA IMAGEN */}
-      <div className="h-48 overflow-hidden relative group">
+      <div className="h-48 overflow-hidden relative">
         <img
           src={imageUrl}
           loading="lazy"
@@ -91,16 +94,13 @@ const ProductCard = ({ product }) => {
         </div>
       </div>
 
-      {/* 🛒 BOTÓN DE ACCIÓN */}
+      {/* 🛒 BOTÓN DE ACCIÓN (visual: toda la tarjeta ya navega al hacer clic) */}
       <div className="p-3 bg-gray-50 border-t border-gray-100">
-        <Link
-          to={`/product/${product._id}`}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
-        >
+        <span className="w-full bg-indigo-600 group-hover:bg-indigo-700 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
           Ver Detalles
-        </Link>
+        </span>
       </div>
-    </div>
+    </Link>
   );
 };
 

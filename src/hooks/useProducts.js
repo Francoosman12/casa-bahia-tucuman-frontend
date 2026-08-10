@@ -1,30 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../api/axiosClient';
 
+// Caché en memoria (fuera del componente) para evitar el flash de "cargando"
+// cuando el usuario vuelve a una página que ya había pedido el catálogo antes.
+const cache = {};
+
 // Recibimos "includeAll" (false por defecto)
 export const useProducts = (includeAll = false) => {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const cacheKey = includeAll ? 'all' : 'public';
+    const [products, setProducts] = useState(cache[cacheKey] || []);
+    const [loading, setLoading] = useState(!cache[cacheKey]);
     const [error, setError] = useState(null);
 
     // Usamos useCallback para que la función no se recree en cada render
     const fetchProducts = useCallback(async () => {
         try {
-            setLoading(true);
-            
+            // Si ya tenemos datos en caché, refrescamos en segundo plano sin mostrar el spinner
+            if (!cache[cacheKey]) setLoading(true);
+
             // 👇 Construcción de la URL: ¿Pido todo o solo activos?
             const endpoint = includeAll ? '/products?all=true' : '/products';
-            
+
             const { data } = await axiosClient.get(endpoint);
+            cache[cacheKey] = data;
             setProducts(data);
             setError(null);
         } catch (err) {
-            console.error(error);
+            console.error(err);
             setError("No se pudo cargar el catálogo.");
         } finally {
             setLoading(false);
         }
-    }, [includeAll]);
+    }, [includeAll, cacheKey]);
 
     useEffect(() => {
         fetchProducts();

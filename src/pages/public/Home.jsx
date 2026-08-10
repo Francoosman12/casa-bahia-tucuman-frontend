@@ -1,23 +1,58 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { motion as Motion, AnimatePresence } from "framer-motion";
 import axiosClient from "../../api/axiosClient";
 import Navbar from "../../components/layout/Navbar";
 import Footer from "../../components/layout/Footer";
 import ProductCard from "../../components/products/ProductCard";
+import ProductCardSkeleton from "../../components/products/ProductCardSkeleton";
 import { useProducts } from "../../hooks/useProducts";
 import { FaFilter, FaSearch, FaArrowDown } from "react-icons/fa";
-import { useSearch } from "../../context/SearchContext";
+import { useSearchParams, useNavigationType } from "react-router-dom";
+
+const GRID_CLASSES =
+  "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6";
+
+const PAGE_SIZE = 12;
 
 const Home = () => {
   // 1. Datos principales
   const { products, loading: productsLoading, error } = useProducts(false); // false = Solo públicos
 
-  // 2. Filtros y Estados
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("TODOS");
-  const { searchTerm, setSearchTerm } = useSearch();
+  // 2. Filtros: viven en la URL (?cat=...&q=...) para que el botón "atrás" del
+  // navegador los restaure solo, y para poder compartir/recargar con el filtro puesto.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigationType = useNavigationType(); // "POP" = venimos de atrás/adelante del navegador
+  const selectedCategory = searchParams.get("cat") || "TODOS";
+  const searchTerm = searchParams.get("q") || "";
 
-  // 3. Paginación (Cargar más)
-  const [visibleCount, setVisibleCount] = useState(12);
+  const [categories, setCategories] = useState([]);
+
+  // 3. Paginación (Cargar más). Si volvemos con el botón "atrás", restauramos
+  // cuántos productos había cargados en vez de arrancar de nuevo en 12.
+  const storageKey = `home-state:${searchParams.toString()}`;
+  const [visibleCount, setVisibleCount] = useState(() => {
+    if (navigationType === "POP") {
+      const raw = sessionStorage.getItem(storageKey);
+      if (raw) {
+        try {
+          const saved = JSON.parse(raw).visibleCount;
+          if (saved) return saved;
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    return PAGE_SIZE;
+  });
+
+  // Refs para poder guardar el estado justo al desmontar (al ir al detalle)
+  // sin depender de closures viejas.
+  const visibleCountRef = useRef(visibleCount);
+  const storageKeyRef = useRef(storageKey);
+  useEffect(() => {
+    visibleCountRef.current = visibleCount;
+    storageKeyRef.current = storageKey;
+  }, [visibleCount, storageKey]);
 
   // Cargar categorías al montar
   useEffect(() => {
@@ -32,10 +67,70 @@ const Home = () => {
     fetchCats();
   }, []);
 
-  // Resetear paginación cuando cambian los filtros (UX Importante)
+  // Resetear paginación solo cuando el usuario cambia filtros a mano (no al
+  // restaurar el estado por un "volver atrás")
+  const isFirstRender = useRef(true);
   useEffect(() => {
-    setVisibleCount(12);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    setVisibleCount(PAGE_SIZE);
   }, [selectedCategory, searchTerm]);
+
+  // Guardar scroll + paginación justo antes de salir de Home (por ejemplo al
+  // hacer clic en un producto), para poder restaurarlo al volver.
+  useEffect(() => {
+    return () => {
+      sessionStorage.setItem(
+        storageKeyRef.current,
+        JSON.stringify({
+          scrollY: window.scrollY,
+          visibleCount: visibleCountRef.current,
+        })
+      );
+    };
+  }, []);
+
+  // Restaurar el scroll al volver con "atrás", una vez que ya hay productos
+  // renderizados en pantalla.
+  useLayoutEffect(() => {
+    if (navigationType !== "POP" || productsLoading) return;
+    const raw = sessionStorage.getItem(storageKey);
+    if (!raw) return;
+    try {
+      const { scrollY } = JSON.parse(raw);
+      if (typeof scrollY === "number") window.scrollTo(0, scrollY);
+    } catch {
+      /* ignore */
+    }
+    // Solo nos interesa la primera vez que termina de cargar tras volver
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsLoading]);
+
+  const setSelectedCategory = (catId) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (catId === "TODOS") next.delete("cat");
+        else next.set("cat", catId);
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const setSearchTerm = (value) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (!value) next.delete("q");
+        else next.set("q", value);
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   // Lógica de Filtrado
   const filteredProducts = products.filter((product) => {
@@ -66,14 +161,19 @@ const Home = () => {
 
       <div className="container mx-auto px-4 py-8 flex-1">
         {/* BANNER */}
-        <div className="mb-8 text-center md:text-left">
+        <Motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="mb-8 text-center md:text-left"
+        >
           <h1 className="text-3xl font-extrabold text-gray-800">
             Catálogo <span className="text-indigo-600">Online</span>
           </h1>
           <p className="text-gray-500 mt-1">
             Encuentra los mejores precios y financiación de Tucumán.
           </p>
-        </div>
+        </Motion.div>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* 🟦 SIDEBAR (Filtros) */}
@@ -127,8 +227,10 @@ const Home = () => {
           {/* 🟩 GRILLA DE PRODUCTOS */}
           <main className="flex-1">
             {productsLoading && (
-              <div className="flex justify-center p-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              <div className={GRID_CLASSES}>
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <ProductCardSkeleton key={i} />
+                ))}
               </div>
             )}
 
@@ -146,11 +248,22 @@ const Home = () => {
 
                 {filteredProducts.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+                    <div className={GRID_CLASSES}>
                       {/* 👇 AQUI ESTABA EL ERROR: USAMOS 'productsToShow' */}
-                      {productsToShow.map((product) => (
-                        <ProductCard key={product._id} product={product} />
-                      ))}
+                      <AnimatePresence mode="popLayout">
+                        {productsToShow.map((product) => (
+                          <Motion.div
+                            key={product._id}
+                            layout
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                          >
+                            <ProductCard product={product} />
+                          </Motion.div>
+                        ))}
+                      </AnimatePresence>
                     </div>
 
                     {/* 👇 BOTÓN VER MÁS */}
@@ -182,8 +295,7 @@ const Home = () => {
                     </p>
                     <button
                       onClick={() => {
-                        setSelectedCategory("TODOS");
-                        setSearchTerm("");
+                        setSearchParams({}, { replace: true });
                       }}
                       className="mt-4 text-indigo-600 font-semibold hover:underline"
                     >

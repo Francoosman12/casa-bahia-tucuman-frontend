@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import axiosClient from "../../api/axiosClient";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion as Motion } from "framer-motion";
 import { formatPrice } from "../../utils/formatPrice";
+import { useProducts } from "../../hooks/useProducts";
 import {
   FaWhatsapp,
   FaArrowLeft,
@@ -34,85 +35,84 @@ const getTikTokId = (url) => {
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { addToCart } = useCart(); // 👈 Hook del carrito
 
-  // Estados de datos
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Reutilizamos el mismo catálogo cacheado que usa el Home: si el usuario
+  // llegó haciendo clic en una tarjeta, el producto ya está en memoria y esta
+  // pantalla se pinta al instante, sin ir de nuevo a la API.
+  const {
+    products,
+    loading: productsLoading,
+    error: productsError,
+  } = useProducts(false);
+  const product = products.find((p) => p._id === id) || null;
 
   // Estados de la Galería
   const [mediaList, setMediaList] = useState([]);
   const [activeMedia, setActiveMedia] = useState(null);
 
   useEffect(() => {
-    const fetchOne = async () => {
-      try {
-        setLoading(true);
-        // Si tienes el endpoint específico usa: axiosClient.get(`/products/${id}`)
-        // Usamos el filtro global por ahora:
-        const { data: allProducts } =
-          await axiosClient.get("/products?all=true");
-        const found = allProducts.find((p) => p._id === id);
+    if (!product) return;
 
-        if (found) {
-          setProduct(found);
+    // --- CONSTRUIR GALERÍA MIXTA ---
+    const media = [];
 
-          // --- CONSTRUIR GALERÍA MIXTA ---
-          const media = [];
+    // 1. Fotos
+    if (product.images && product.images.length > 0) {
+      product.images.forEach((img) => {
+        media.push({
+          type: "image",
+          url: img.url,
+          id: img._id || img.url,
+        });
+      });
+    }
 
-          // 1. Fotos
-          if (found.images && found.images.length > 0) {
-            found.images.forEach((img) => {
-              media.push({
-                type: "image",
-                url: img.url,
-                id: img._id || img.url,
-              });
-            });
-          }
+    // 2. Agregar Video (YouTube o TikTok)
+    if (product.videoUrl) {
+      const ytId = getYouTubeId(product.videoUrl);
+      const tkId = getTikTokId(product.videoUrl);
 
-          // 2. Agregar Video (YouTube o TikTok)
-          if (found.videoUrl) {
-            const ytId = getYouTubeId(found.videoUrl);
-            const tkId = getTikTokId(found.videoUrl);
-
-            if (ytId) {
-              // CASO YOUTUBE
-              media.push({
-                type: "video_youtube", // Cambiamos nombre para diferenciar
-                url: `https://www.youtube.com/embed/${ytId}`,
-                thumbnail: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
-                id: "video-item",
-              });
-            } else if (tkId) {
-              // CASO TIKTOK
-              media.push({
-                type: "video_tiktok",
-                // URL oficial de embed de TikTok
-                url: `https://www.tiktok.com/embed/v2/${tkId}`,
-                // Usamos un logo de TikTok estático porque ellos no dan la foto gratis por URL
-                thumbnail:
-                  "https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg",
-                id: "video-item",
-              });
-            }
-          }
-
-          setMediaList(media);
-          if (media.length > 0) setActiveMedia(media[0]);
-        } else {
-          setError("Producto no encontrado");
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Error al cargar el producto");
-      } finally {
-        setLoading(false);
+      if (ytId) {
+        // CASO YOUTUBE
+        media.push({
+          type: "video_youtube", // Cambiamos nombre para diferenciar
+          url: `https://www.youtube.com/embed/${ytId}`,
+          thumbnail: `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`,
+          id: "video-item",
+        });
+      } else if (tkId) {
+        // CASO TIKTOK
+        media.push({
+          type: "video_tiktok",
+          // URL oficial de embed de TikTok
+          url: `https://www.tiktok.com/embed/v2/${tkId}`,
+          // Usamos un logo de TikTok estático porque ellos no dan la foto gratis por URL
+          thumbnail:
+            "https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg",
+          id: "video-item",
+        });
       }
-    };
-    fetchOne();
-  }, [id]);
+    }
+
+    setMediaList(media);
+    setActiveMedia(media.length > 0 ? media[0] : null);
+    // Reconstruimos la galería solo cuando cambia de producto, no en cada
+    // revalidación silenciosa del catálogo en segundo plano.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?._id]);
+
+  // Volver a donde estaba el usuario (con sus filtros y scroll intactos) en
+  // vez de mandarlo siempre a "/" limpio. Si llegó por un link directo (sin
+  // historial dentro del sitio), lo mandamos al catálogo.
+  const handleBack = () => {
+    if (window.history.state?.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
 
   const handleWhatsAppBuy = () => {
     if (!product) return;
@@ -124,15 +124,17 @@ const ProductDetail = () => {
     );
   };
 
-  if (loading)
+  if (productsLoading && !product)
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
-  if (error)
+  if (!product)
     return (
-      <div className="text-center p-20 text-red-600 font-bold">{error}</div>
+      <div className="text-center p-20 text-red-600 font-bold">
+        {productsError || "Producto no encontrado"}
+      </div>
     );
 
   return (
@@ -140,14 +142,20 @@ const ProductDetail = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
-        <Link
-          to="/"
+        <button
+          onClick={handleBack}
           className="inline-flex items-center text-gray-500 hover:text-indigo-600 mb-6 font-medium text-sm transition-colors"
         >
           <FaArrowLeft className="mr-2" /> Volver al catálogo
-        </Link>
+        </button>
 
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        <Motion.div
+          key={product._id}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
             {/* ========================================================= */}
             {/* 🖼️ IZQUIERDA: GALERÍA MULTIMEDIA                         */}
@@ -349,7 +357,7 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
-        </div>
+        </Motion.div>
       </div>
     </div>
   );
